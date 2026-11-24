@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puncak Abis Tka</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <div id="audio-gate" class="audio-gate-overlay">
+    <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; color: #fff;">Selamat Datang!</h2>
+    <p style="color: var(--text-muted); margin-top: 8px;">Klik tombol di bawah untuk masuk</p>
+    <button class="gate-btn" onclick="unlockAudioAndStart()">LANJUTKAN</button>
+  </div>
+
+  <div id="flash-overlay" class="flash-overlay"></div>
+
+  <audio id="bg-music" loop preload="auto">
+    <source src="https://www.image2url.com/r2/default/audio/1785759122918-20ec7534-a483-43ff-a857-4a9b9ab39694.mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="bg-grid"></div>
+  <div class="aurora-container">
+    <div class="aurora-mesh aurora-1"></div>
+    <div class="aurora-mesh aurora-2"></div>
+    <div class="aurora-mesh aurora-3"></div>
+  </div>
+
+  <div class="app-container">
+    <header>
+      <div class="badge-header">Official Formal 2</div>
+      <h1>Puncak Abis Tka</h1>
+      <p>Target Iuran: <strong>Rp 250.000 / orang</strong></p>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span>Peserta</span>
+        <h3 id="stat-count">0 Orang</h3>
+      </div>
+      <div class="stat-card">
+        <span>Target Total</span>
+        <h3 id="stat-target" style="color: var(--accent-cyan);">Rp 0</h3>
+      </div>
+      <div class="stat-card">
+        <span>Terkumpul</span>
+        <h3 id="stat-collected" style="color: var(--accent-green);">Rp 0</h3>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="panel">
+        <div class="panel-title">💳 Masukan Nominal</div>
+
+        <div class="form-group">
+          <label>Pilih Anggota</label>
+          <div class="custom-select-trigger" onclick="openMemberModal()">
+            <span id="selected-member-text">⚡ DERI (DEV)</span>
+            <span>▼</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Pilih Nominal Transaksi</label>
+          <div class="amount-grid">
+            <div class="amount-card selected" onclick="selectNominal(5000, this)">
+              <span class="val">5K</span>
+              <span class="lbl">Rp 5.000</span>
+            </div>
+            <div class="amount-card" onclick="selectNominal(10000, this)">
+              <span class="val">10K</span>
+              <span class="lbl">Rp 10.000</span>
+            </div>
+            <div class="amount-card" onclick="selectNominal(20000, this)">
+              <span class="val">20K</span>
+              <span class="lbl">Rp 20.000</span>
+            </div>
+            <div class="amount-card" onclick="selectNominal(50000, this)">
+              <span class="val">50K</span>
+              <span class="lbl">Rp 50.000</span>
+            </div>
+            <div class="amount-card" onclick="selectNominal(100000, this)">
+              <span class="val">100K</span>
+              <span class="lbl">Rp 100.000</span>
+            </div>
+            <div class="amount-card" onclick="selectNominal(150000, this)">
+              <span class="val">150K</span>
+              <span class="lbl">Rp 150.000</span>
+            </div>
+            <div class="amount-card full-pay" onclick="selectNominal(250000, this)">
+              <span class="val">🎉 250K (LUNAS FULL)</span>
+              <span class="lbl">Rp 250.000 Pas / Langsung Lunas</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
+          <input type="text" id="input-message" placeholder="Tulis Pesan / Catatan (Opsional)...">
+        </div>
+
+        <button class="btn btn-confirm" onclick="confirmPayment()">KONFIRMASI</button>
+
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 16px 0;">
+
+        <div class="panel-title" style="font-size: 0.9rem;">📜 Riwayat Tabungan</div>
+        <div id="history-container" class="history-list"></div>
+
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 16px 0;">
+
+        <div class="form-group">
+          <label>Tambah Peserta Baru</label>
+          <input type="text" id="input-new-name" placeholder="Nama anggota...">
+          <button class="btn btn-secondary" onclick="addMember()" style="margin-top: 6px; width: 100%;">+ Tambah Anggota</button>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label>Hapus Peserta</label>
+          <select id="select-delete-member"></select>
+          <button class="btn btn-danger" onclick="requestRemoveMember()" style="margin-top: 6px; width: 100%;">❌ Hapus Anggota</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">👥 Daftar Peserta & Progress</div>
+
+        <div class="filter-tabs">
+          <button class="tab-btn active" onclick="setFilter('all', this)">Semua</button>
+          <button class="tab-btn" onclick="setFilter('belum', this)">Belum Lunas</button>
+          <button class="tab-btn" onclick="setFilter('lunas', this)">Lunas 🎉</button>
+        </div>
+
+        <div id="member-cards-container" class="member-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="member-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h4 style="color: #fff;">Pilih Anggota</h4>
+        <button style="background: none; border: none; color: #fff; cursor: pointer;" onclick="closeMemberModal()">✕</button>
+      </div>
+      <div id="modal-member-list" class="member-select-list"></div>
+    </div>
+  </div>
+
+  <div id="delete-confirm-modal" class="modal-overlay">
+    <div class="delete-confirm-box">
+      <div class="delete-icon-circle">!</div>
+      <div class="delete-confirm-title">Hapus Riwayat?</div>
+      <div class="delete-confirm-desc">data nominal ini akan dihapus permanen dari tabungan kita</div>
+      <div class="delete-btn-group">
+        <button class="btn-dialog-yes" onclick="executeDeleteTransaction()">YA HAPUS</button>
+        <button class="btn-dialog-no" onclick="closeDeleteModal()">BATAL</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="delete-member-modal" class="modal-overlay">
+    <div class="delete-confirm-box">
+      <div class="delete-icon-circle">!</div>
+      <div class="delete-confirm-title">hapus anggota?</div>
+      <div class="delete-confirm-desc" id="delete-member-name-desc">apakah anda yakin ingin menghapus anggota ini?</div>
+      <div class="delete-btn-group">
+        <button class="btn-dialog-yes" onclick="executeRemoveMember()">YA</button>
+        <button class="btn-dialog-no" onclick="closeDeleteMemberModal()">TIDAK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
